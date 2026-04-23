@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+*.pyc
+*.pyo
+*.pyd
+frontend/node_modules
+frontend/dist
+simulation-service/.runtime
+data/runtime/artifacts
+node_modules

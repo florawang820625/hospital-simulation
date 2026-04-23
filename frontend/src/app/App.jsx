@@ -1,0 +1,214 @@
+import { startTransition, useEffect, useState } from 'react';
+import './App.css';
+import MetricCard from '../components/MetricCard.jsx';
+import StatusBanner from '../components/StatusBanner.jsx';
+import ResultSummary from '../features/results/components/ResultSummary.jsx';
+import EventLogTable from '../features/results/components/EventLogTable.jsx';
+import ScenarioSelector from '../features/simulation/components/ScenarioSelector.jsx';
+import SimulationForm from '../features/simulation/components/SimulationForm.jsx';
+import { fetchSampleResult, fetchScenarios, isRemoteApiConfigured, runSimulation } from '../lib/api.js';
+import { formatInteger } from '../lib/formatters.js';
+
+const EMPTY_FORM = {
+  num_doctors: 1,
+  num_nurses: 2,
+  num_ct: 1,
+  num_xray: 1,
+  num_lab: 1,
+  simulation_time: 10080,
+  exam_probability: 0.6,
+  random_seed: 7,
+};
+
+function App() {
+  const [scenarios, setScenarios] = useState([]);
+  const [selectedScenarioSlug, setSelectedScenarioSlug] = useState('');
+  const [formValues, setFormValues] = useState(EMPTY_FORM);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [apiAvailable, setApiAvailable] = useState(false);
+  const [dataSource, setDataSource] = useState('sample');
+  const [status, setStatus] = useState({
+    tone: 'info',
+    message: '正在載入情境與樣本資料。',
+  });
+
+  const selectedScenario = scenarios.find((scenario) => scenario.slug === selectedScenarioSlug) || null;
+
+  const commitScenarioResult = (scenario, sampleResult) => {
+    startTransition(() => {
+      setResult(sampleResult);
+      setFormValues({ ...scenario.parameters });
+      setDataSource('sample');
+    });
+  };
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const initialize = async () => {
+      try {
+        const scenarioResponse = await fetchScenarios(controller.signal);
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        const nextScenarios = scenarioResponse.data;
+        const defaultScenario = nextScenarios[0];
+        setScenarios(nextScenarios);
+        setSelectedScenarioSlug(defaultScenario.slug);
+        setApiAvailable(scenarioResponse.source === 'api' || isRemoteApiConfigured());
+        const sampleResult = await fetchSampleResult(defaultScenario.sample_result_slug, controller.signal);
+        commitScenarioResult(defaultScenario, sampleResult);
+        setStatus({
+          tone: scenarioResponse.source === 'api' ? 'success' : 'warning',
+          message:
+            scenarioResponse.source === 'api'
+              ? '已載入後端提供的情境設定。'
+              : '目前未連到 API，畫面已切換到樣本資料模式。',
+        });
+      } catch (error) {
+        setStatus({
+          tone: 'error',
+          message: `初始化失敗：${error.message}`,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initialize();
+    return () => controller.abort();
+  }, []);
+
+  const handleScenarioChange = async (slug) => {
+    const scenario = scenarios.find((item) => item.slug === slug);
+    if (!scenario) {
+      return;
+    }
+
+    setSelectedScenarioSlug(slug);
+    setBusy(true);
+    try {
+      const sampleResult = await fetchSampleResult(scenario.sample_result_slug);
+      commitScenarioResult(scenario, sampleResult);
+      setStatus({
+        tone: 'info',
+        message: `已切換到 ${scenario.title} 樣本情境。`,
+      });
+    } catch (error) {
+      setStatus({
+        tone: 'error',
+        message: `載入情境失敗：${error.message}`,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRunSimulation = async () => {
+    setBusy(true);
+    try {
+      const response = await runSimulation(formValues);
+      startTransition(() => {
+        setResult(response);
+        setDataSource('live');
+      });
+      setApiAvailable(true);
+      setStatus({
+        tone: 'success',
+        message: '即時模擬完成，畫面已載入最新結果。',
+      });
+    } catch (error) {
+      if (selectedScenario) {
+        try {
+          const sampleResult = await fetchSampleResult(selectedScenario.sample_result_slug);
+          commitScenarioResult(selectedScenario, sampleResult);
+          setStatus({
+            tone: 'warning',
+            message: `未能連到 API，已退回 ${selectedScenario.title} 樣本結果。`,
+          });
+        } catch (sampleError) {
+          setStatus({
+            tone: 'error',
+            message: `即時模擬與樣本載入都失敗：${sampleError.message}`,
+          });
+        }
+      } else {
+        setStatus({
+          tone: 'error',
+          message: `即時模擬失敗：${error.message}`,
+        });
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <main className="dashboard-shell">
+      <section className="hero-card">
+        <div className="hero-copy">
+          <p className="eyebrow">React + SimPy + FastAPI</p>
+          <h1 className="hero-title">急診模擬系統控制台</h1>
+          <p className="hero-subtitle">
+            Cloudflare Pages 只承載前端，模擬執行交給 FastAPI。當 API 尚未部署時，頁面會自動退回
+            `public/data` 內的樣本結果，方便先展示介面與資料流。
+          </p>
+        </div>
+
+        <div className="hero-metrics">
+          <MetricCard label="情境數量" value={formatInteger(scenarios.length)} />
+          <MetricCard label="結果來源" value={dataSource === 'live' ? 'Live API' : 'Sample Data'} />
+          <MetricCard
+            label="事件筆數"
+            value={formatInteger(result?.summary?.total_events || result?.event_log?.length || 0)}
+          />
+          <MetricCard
+            label="病人數"
+            value={formatInteger(result?.summary?.total_patients || result?.patient_summary?.length || 0)}
+          />
+        </div>
+      </section>
+
+      <StatusBanner tone={status.tone}>{status.message}</StatusBanner>
+
+      <section className="layout-grid">
+        <div className="layout-column">
+          <ScenarioSelector
+            scenarios={scenarios}
+            selectedSlug={selectedScenarioSlug}
+            onChange={handleScenarioChange}
+            disabled={loading || busy}
+          />
+          <SimulationForm
+            values={formValues}
+            onFieldChange={(key, value) =>
+              setFormValues((current) => ({
+                ...current,
+                [key]: value,
+              }))
+            }
+            onSubmit={handleRunSimulation}
+            disabled={loading || busy}
+            apiAvailable={apiAvailable}
+          />
+        </div>
+
+        <div className="layout-column">
+          {result ? (
+            <ResultSummary
+              result={result}
+              sourceLabel={dataSource === 'live' ? '即時 API' : '本地樣本'}
+            />
+          ) : null}
+        </div>
+      </section>
+
+      {result?.event_log ? <EventLogTable logs={result.event_log} /> : null}
+    </main>
+  );
+}
+
+export default App;

@@ -1,0 +1,742 @@
+{
+  "patient_summary": [
+    {
+      "patient_id": "P0001",
+      "arrival_clock": 3.91,
+      "enter_facility_clock": 6.2,
+      "waiting_time": 2.29,
+      "service_time": 35.16,
+      "departure_clock": 41.36,
+      "time_in_system": 37.45
+    },
+    {
+      "patient_id": "P0002",
+      "arrival_clock": 14.44,
+      "enter_facility_clock": 23.55,
+      "waiting_time": 9.11,
+      "service_time": 5.47,
+      "departure_clock": 29.02,
+      "time_in_system": 14.58
+    },
+    {
+      "patient_id": "P0003",
+      "arrival_clock": 15.04,
+      "enter_facility_clock": 17.32,
+      "waiting_time": 2.28,
+      "service_time": 51.75,
+      "departure_clock": 69.07,
+      "time_in_system": 54.03
+    },
+    {
+      "patient_id": "P0004",
+      "arrival_clock": 20.72,
+      "enter_facility_clock": 29.02,
+      "waiting_time": 8.3,
+      "service_time": 63.43,
+      "departure_clock": 92.45,
+      "time_in_system": 71.73
+    },
+    {
+      "patient_id": "P0005",
+      "arrival_clock": 30.59,
+      "enter_facility_clock": 41.36,
+      "waiting_time": 10.77,
+      "service_time": 36.06,
+      "departure_clock": 77.42,
+      "time_in_system": 46.83
+    },
+    {
+      "patient_id": "P0006",
+      "arrival_clock": 31.85,
+      "enter_facility_clock": 31.85,
+      "waiting_time": 0.0,
+      "service_time": 4.32,
+      "departure_clock": 36.17,
+      "time_in_system": 4.32
+    },
+    {
+      "patient_id": "P0007",
+      "arrival_clock": 33.84,
+      "enter_facility_clock": 52.21,
+      "waiting_time": 18.37,
+      "service_time": 33.08,
+      "departure_clock": 85.29,
+      "time_in_system": 51.45
+    },
+    {
+      "patient_id": "P0008",
+      "arrival_clock": 38.5,
+      "enter_facility_clock": 92.45,
+      "waiting_time": 53.95,
+      "service_time": 14.45,
+      "departure_clock": 106.9,
+      "time_in_system": 68.4
+    },
+    {
+      "patient_id": "P0009",
+      "arrival_clock": 44.08,
+      "enter_facility_clock": 106.9,
+      "waiting_time": 62.82,
+      "service_time": 27.23,
+      "departure_clock": 134.13,
+      "time_in_system": 90.05
+    },
+    {
+      "patient_id": "P0010",
+      "arrival_clock": 47.64,
+      "enter_facility_clock": 118.37,
+      "waiting_time": 70.73,
+      "service_time": 38.59,
+      "departure_clock": 156.96,
+      "time_in_system": 109.32
+    },
+    {
+      "patient_id": "P0011",
+      "arrival_clock": 50.44,
+      "enter_facility_clock": 134.13,
+      "waiting_time": 83.69,
+      "service_time": 38.63,
+      "departure_clock": 172.76,
+      "time_in_system": 122.32
+    },
+    {
+      "patient_id": "P0012",
+      "arrival_clock": 71.25,
+      "enter_facility_clock": 156.96,
+      "waiting_time": 85.71,
+      "service_time": 9.19,
+      "departure_clock": 166.15,
+      "time_in_system": 94.9
+    },
+    {
+      "patient_id": "P0013",
+      "arrival_clock": 92.08,
+      "enter_facility_clock": 172.76,
+      "waiting_time": 80.68,
+      "service_time": 37.85,
+      "departure_clock": 210.61,
+      "time_in_system": 118.53
+    },
+    {
+      "patient_id": "P0014",
+      "arrival_clock": 98.17,
+      "enter_facility_clock": 186.75,
+      "waiting_time": 88.58,
+      "service_time": 48.86,
+      "departure_clock": 235.61,
+      "time_in_system": 137.44
+    },
+    {
+      "patient_id": "P0015",
+      "arrival_clock": 109.08,
+      "enter_facility_clock": 109.08,
+      "waiting_time": 0.0,
+      "service_time": 3.14,
+      "departure_clock": 112.22,
+      "time_in_system": 3.14
+    },
+    {
+      "patient_id": "P0016",
+      "arrival_clock": 126.34,
+      "enter_facility_clock": 198.1,
+      "waiting_time": 71.76,
+      "service_time": 66.3,
+      "departure_clock": 264.4,
+      "time_in_system": 138.06
+    },
+    {
+      "patient_id": "P0017",
+      "arrival_clock": 127.58,
+      "enter_facility_clock": 127.58,
+      "waiting_time": 0.0,
+      "service_time": 2.99,
+      "departure_clock": 130.57,
+      "time_in_system": 2.99
+    },
+    {
+      "patient_id": "P0018",
+      "arrival_clock": 128.97,
+      "enter_facility_clock": 210.61,
+      "waiting_time": 81.64,
+      "service_time": 48.48,
+      "departure_clock": 259.09,
+      "time_in_system": 130.12
+    },
+    {
+      "patient_id": "P0019",
+      "arrival_clock": 150.46,
+      "enter_facility_clock": 150.46,
+      "waiting_time": 0.0,
+      "service_time": 2.7,
+      "departure_clock": 153.16,
+      "time_in_system": 2.7
+    },
+    {
+      "patient_id": "P0020",
+      "arrival_clock": 152.09,
+      "enter_facility_clock": 219.26,
+      "waiting_time": 67.17,
+      "service_time": 54.11,
+      "departure_clock": 273.37,
+      "time_in_system": 121.28
+    },
+    {
+      "patient_id": "P0021",
+      "arrival_clock": 154.75,
+      "enter_facility_clock": 235.61,
+      "waiting_time": 80.86,
+      "service_time": 46.4,
+      "departure_clock": 282.01,
+      "time_in_system": 127.26
+    },
+    {
+      "patient_id": "P0022",
+      "arrival_clock": 157.8,
+      "enter_facility_clock": 242.08,
+      "waiting_time": 84.28,
+      "service_time": 46.55,
+      "departure_clock": 288.63,
+      "time_in_system": 130.83
+    },
+    {
+      "patient_id": "P0023",
+      "arrival_clock": 166.15,
+      "enter_facility_clock": 288.63,
+      "waiting_time": 122.48,
+      "service_time": 44.58,
+      "departure_clock": 333.21,
+      "time_in_system": 167.06
+    },
+    {
+      "patient_id": "P0024",
+      "arrival_clock": 177.43,
+      "enter_facility_clock": 177.43,
+      "waiting_time": 0.0,
+      "service_time": 5.19,
+      "departure_clock": 182.62,
+      "time_in_system": 5.19
+    },
+    {
+      "patient_id": "P0025",
+      "arrival_clock": 198.18,
+      "enter_facility_clock": 297.19,
+      "waiting_time": 99.01,
+      "service_time": 14.55,
+      "departure_clock": 311.74,
+      "time_in_system": 113.56
+    },
+    {
+      "patient_id": "P0026",
+      "arrival_clock": 202.34,
+      "enter_facility_clock": 311.74,
+      "waiting_time": 109.4,
+      "service_time": 42.43,
+      "departure_clock": 354.17,
+      "time_in_system": 151.83
+    },
+    {
+      "patient_id": "P0027",
+      "arrival_clock": 203.98,
+      "enter_facility_clock": 333.21,
+      "waiting_time": 129.23,
+      "service_time": 41.83,
+      "departure_clock": 375.04,
+      "time_in_system": 171.06
+    },
+    {
+      "patient_id": "P0028",
+      "arrival_clock": 224.72,
+      "enter_facility_clock": 354.17,
+      "waiting_time": 129.45,
+      "service_time": 13.27,
+      "departure_clock": 367.44,
+      "time_in_system": 142.72
+    },
+    {
+      "patient_id": "P0029",
+      "arrival_clock": 225.8,
+      "enter_facility_clock": 375.04,
+      "waiting_time": 149.24,
+      "service_time": 5.14,
+      "departure_clock": 380.18,
+      "time_in_system": 154.38
+    },
+    {
+      "patient_id": "P0030",
+      "arrival_clock": 243.45,
+      "enter_facility_clock": 243.45,
+      "waiting_time": 0.0,
+      "service_time": 4.79,
+      "departure_clock": 248.24,
+      "time_in_system": 4.79
+    },
+    {
+      "patient_id": "P0031",
+      "arrival_clock": 263.35,
+      "enter_facility_clock": 380.18,
+      "waiting_time": 116.83,
+      "service_time": 37.44,
+      "departure_clock": 417.62,
+      "time_in_system": 154.27
+    },
+    {
+      "patient_id": "P0032",
+      "arrival_clock": 280.04,
+      "enter_facility_clock": 280.04,
+      "waiting_time": 0.0,
+      "service_time": 2.91,
+      "departure_clock": 282.95,
+      "time_in_system": 2.91
+    },
+    {
+      "patient_id": "P0033",
+      "arrival_clock": 293.51,
+      "enter_facility_clock": 389.52,
+      "waiting_time": 96.01,
+      "service_time": 36.69,
+      "departure_clock": 426.21,
+      "time_in_system": 132.7
+    },
+    {
+      "patient_id": "P0034",
+      "arrival_clock": 293.79,
+      "enter_facility_clock": 400.39,
+      "waiting_time": 106.6,
+      "service_time": 42.48,
+      "departure_clock": 442.87,
+      "time_in_system": 149.08
+    },
+    {
+      "patient_id": "P0035",
+      "arrival_clock": 305.58,
+      "enter_facility_clock": 426.21,
+      "waiting_time": 120.63,
+      "service_time": 10.56,
+      "departure_clock": 436.77,
+      "time_in_system": 131.19
+    },
+    {
+      "patient_id": "P0036",
+      "arrival_clock": 308.07,
+      "enter_facility_clock": 442.87,
+      "waiting_time": 134.8,
+      "service_time": 11.93,
+      "departure_clock": 454.8,
+      "time_in_system": 146.73
+    },
+    {
+      "patient_id": "P0037",
+      "arrival_clock": 310.36,
+      "enter_facility_clock": 310.36,
+      "waiting_time": 0.0,
+      "service_time": 3.92,
+      "departure_clock": 314.28,
+      "time_in_system": 3.92
+    },
+    {
+      "patient_id": "P0038",
+      "arrival_clock": 328.71,
+      "enter_facility_clock": 328.71,
+      "waiting_time": 0.0,
+      "service_time": 2.72,
+      "departure_clock": 331.43,
+      "time_in_system": 2.72
+    },
+    {
+      "patient_id": "P0039",
+      "arrival_clock": 335.21,
+      "enter_facility_clock": 454.8,
+      "waiting_time": 119.59,
+      "service_time": 53.07,
+      "departure_clock": 507.87,
+      "time_in_system": 172.66
+    },
+    {
+      "patient_id": "P0040",
+      "arrival_clock": 351.35,
+      "enter_facility_clock": 466.79,
+      "waiting_time": 115.44,
+      "service_time": 31.15,
+      "departure_clock": 497.94,
+      "time_in_system": 146.59
+    },
+    {
+      "patient_id": "P0041",
+      "arrival_clock": 352.71,
+      "enter_facility_clock": 352.71,
+      "waiting_time": 0.0,
+      "service_time": 2.58,
+      "departure_clock": 355.29,
+      "time_in_system": 2.58
+    },
+    {
+      "patient_id": "P0042",
+      "arrival_clock": 369.13,
+      "enter_facility_clock": 473.16,
+      "waiting_time": 104.03,
+      "service_time": 39.94,
+      "departure_clock": 513.1,
+      "time_in_system": 143.97
+    },
+    {
+      "patient_id": "P0043",
+      "arrival_clock": 377.09,
+      "enter_facility_clock": 377.09,
+      "waiting_time": 0.0,
+      "service_time": 4.11,
+      "departure_clock": 381.2,
+      "time_in_system": 4.11
+    },
+    {
+      "patient_id": "P0044",
+      "arrival_clock": 387.58,
+      "enter_facility_clock": 387.58,
+      "waiting_time": 0.0,
+      "service_time": 2.84,
+      "departure_clock": 390.42,
+      "time_in_system": 2.84
+    },
+    {
+      "patient_id": "P0045",
+      "arrival_clock": 405.07,
+      "enter_facility_clock": 480.57,
+      "waiting_time": 75.5,
+      "service_time": 52.27,
+      "departure_clock": 532.84,
+      "time_in_system": 127.77
+    },
+    {
+      "patient_id": "P0046",
+      "arrival_clock": 411.2,
+      "enter_facility_clock": 411.2,
+      "waiting_time": 0.0,
+      "service_time": 5.67,
+      "departure_clock": 416.87,
+      "time_in_system": 5.67
+    },
+    {
+      "patient_id": "P0047",
+      "arrival_clock": 416.66,
+      "enter_facility_clock": 513.1,
+      "waiting_time": 96.44,
+      "service_time": 51.77,
+      "departure_clock": 564.87,
+      "time_in_system": 148.21
+    },
+    {
+      "patient_id": "P0048",
+      "arrival_clock": 418.68,
+      "enter_facility_clock": 532.84,
+      "waiting_time": 114.16,
+      "service_time": 38.9,
+      "departure_clock": 571.74,
+      "time_in_system": 153.06
+    },
+    {
+      "patient_id": "P0049",
+      "arrival_clock": 425.1,
+      "enter_facility_clock": 539.14,
+      "waiting_time": 114.04,
+      "service_time": 50.0,
+      "departure_clock": 589.14,
+      "time_in_system": 164.04
+    },
+    {
+      "patient_id": "P0050",
+      "arrival_clock": 429.04,
+      "enter_facility_clock": 429.04,
+      "waiting_time": 0.0,
+      "service_time": 4.24,
+      "departure_clock": 433.28,
+      "time_in_system": 4.24
+    },
+    {
+      "patient_id": "P0051",
+      "arrival_clock": 430.16,
+      "enter_facility_clock": 546.73,
+      "waiting_time": 116.57,
+      "service_time": 10.7,
+      "departure_clock": 557.43,
+      "time_in_system": 127.27
+    },
+    {
+      "patient_id": "P0052",
+      "arrival_clock": 433.41,
+      "enter_facility_clock": 571.74,
+      "waiting_time": 138.33,
+      "service_time": 47.67,
+      "departure_clock": 619.41,
+      "time_in_system": 186.0
+    },
+    {
+      "patient_id": "P0053",
+      "arrival_clock": 441.66,
+      "enter_facility_clock": 589.14,
+      "waiting_time": 147.48,
+      "service_time": 38.08,
+      "departure_clock": 627.22,
+      "time_in_system": 185.56
+    },
+    {
+      "patient_id": "P0054",
+      "arrival_clock": 448.7,
+      "enter_facility_clock": 596.64,
+      "waiting_time": 147.94,
+      "service_time": 6.9,
+      "departure_clock": 603.54,
+      "time_in_system": 154.84
+    },
+    {
+      "patient_id": "P0055",
+      "arrival_clock": 456.32,
+      "enter_facility_clock": 456.32,
+      "waiting_time": 0.0,
+      "service_time": 3.04,
+      "departure_clock": 459.36,
+      "time_in_system": 3.04
+    },
+    {
+      "patient_id": "P0056",
+      "arrival_clock": 484.82,
+      "enter_facility_clock": 603.54,
+      "waiting_time": 118.72,
+      "service_time": 40.72,
+      "departure_clock": 644.26,
+      "time_in_system": 159.44
+    },
+    {
+      "patient_id": "P0057",
+      "arrival_clock": 497.42,
+      "enter_facility_clock": 497.42,
+      "waiting_time": 0.0,
+      "service_time": 3.94,
+      "departure_clock": 501.36,
+      "time_in_system": 3.94
+    },
+    {
+      "patient_id": "P0058",
+      "arrival_clock": 502.49,
+      "enter_facility_clock": 502.49,
+      "waiting_time": 0.0,
+      "service_time": 3.73,
+      "departure_clock": 506.22,
+      "time_in_system": 3.73
+    },
+    {
+      "patient_id": "P0059",
+      "arrival_clock": 504.26,
+      "enter_facility_clock": 627.22,
+      "waiting_time": 122.96,
+      "service_time": 12.07,
+      "departure_clock": 639.29,
+      "time_in_system": 135.03
+    },
+    {
+      "patient_id": "P0060",
+      "arrival_clock": 508.4,
+      "enter_facility_clock": 508.4,
+      "waiting_time": 0.0,
+      "service_time": 4.21,
+      "departure_clock": 512.61,
+      "time_in_system": 4.21
+    },
+    {
+      "patient_id": "P0061",
+      "arrival_clock": 508.59,
+      "enter_facility_clock": 644.26,
+      "waiting_time": 135.67,
+      "service_time": 30.65,
+      "departure_clock": 674.91,
+      "time_in_system": 166.32
+    },
+    {
+      "patient_id": "P0062",
+      "arrival_clock": 508.78,
+      "enter_facility_clock": 651.68,
+      "waiting_time": 142.9,
+      "service_time": 50.62,
+      "departure_clock": 702.3,
+      "time_in_system": 193.52
+    },
+    {
+      "patient_id": "P0063",
+      "arrival_clock": 515.96,
+      "enter_facility_clock": 515.96,
+      "waiting_time": 0.0,
+      "service_time": 2.42,
+      "departure_clock": 518.38,
+      "time_in_system": 2.42
+    },
+    {
+      "patient_id": "P0064",
+      "arrival_clock": 551.6,
+      "enter_facility_clock": 551.6,
+      "waiting_time": 0.0,
+      "service_time": 2.23,
+      "departure_clock": 553.83,
+      "time_in_system": 2.23
+    },
+    {
+      "patient_id": "P0065",
+      "arrival_clock": 552.54,
+      "enter_facility_clock": 661.14,
+      "waiting_time": 108.6,
+      "service_time": 55.92,
+      "departure_clock": 717.06,
+      "time_in_system": 164.52
+    },
+    {
+      "patient_id": "P0066",
+      "arrival_clock": 558.08,
+      "enter_facility_clock": 558.08,
+      "waiting_time": 0.0,
+      "service_time": 5.43,
+      "departure_clock": 563.51,
+      "time_in_system": 5.43
+    },
+    {
+      "patient_id": "P0067",
+      "arrival_clock": 558.95,
+      "enter_facility_clock": 674.91,
+      "waiting_time": 115.96,
+      "service_time": 36.71,
+      "departure_clock": 711.62,
+      "time_in_system": 152.67
+    },
+    {
+      "patient_id": "P0068",
+      "arrival_clock": 578.82,
+      "enter_facility_clock": 702.3,
+      "waiting_time": 123.48,
+      "service_time": 8.27,
+      "departure_clock": 710.57,
+      "time_in_system": 131.75
+    },
+    {
+      "patient_id": "P0069",
+      "arrival_clock": 580.2,
+      "enter_facility_clock": 684.65,
+      "waiting_time": 104.45,
+      "service_time": 10.05,
+      "departure_clock": 694.7,
+      "time_in_system": 114.5
+    },
+    {
+      "patient_id": "P0070",
+      "arrival_clock": 581.36,
+      "enter_facility_clock": 710.57,
+      "waiting_time": 129.21,
+      "service_time": 6.49,
+      "departure_clock": 717.06,
+      "time_in_system": 135.7
+    },
+    {
+      "patient_id": "P0071",
+      "arrival_clock": 583.61,
+      "enter_facility_clock": 583.61,
+      "waiting_time": 0.0,
+      "service_time": 3.16,
+      "departure_clock": 586.77,
+      "time_in_system": 3.16
+    },
+    {
+      "patient_id": "P0072",
+      "arrival_clock": 597.86,
+      "enter_facility_clock": 597.86,
+      "waiting_time": 0.0,
+      "service_time": 2.43,
+      "departure_clock": 600.29,
+      "time_in_system": 2.43
+    },
+    {
+      "patient_id": "P0073",
+      "arrival_clock": 625.14,
+      "enter_facility_clock": 625.14,
+      "waiting_time": 0.0,
+      "service_time": 5.33,
+      "departure_clock": 630.47,
+      "time_in_system": 5.33
+    },
+    {
+      "patient_id": "P0074",
+      "arrival_clock": 629.34,
+      "enter_facility_clock": 629.34,
+      "waiting_time": 0.0,
+      "service_time": 3.39,
+      "departure_clock": 632.73,
+      "time_in_system": 3.39
+    },
+    {
+      "patient_id": "P0075",
+      "arrival_clock": 634.52,
+      "enter_facility_clock": 634.52,
+      "waiting_time": 0.0,
+      "service_time": 2.29,
+      "departure_clock": 636.81,
+      "time_in_system": 2.29
+    },
+    {
+      "patient_id": "P0076",
+      "arrival_clock": 635.92,
+      "enter_facility_clock": 635.92,
+      "waiting_time": 0.0,
+      "service_time": 2.65,
+      "departure_clock": 638.57,
+      "time_in_system": 2.65
+    },
+    {
+      "patient_id": "P0077",
+      "arrival_clock": 638.87,
+      "enter_facility_clock": 638.87,
+      "waiting_time": 0.0,
+      "service_time": 5.48,
+      "departure_clock": 644.35,
+      "time_in_system": 5.48
+    },
+    {
+      "patient_id": "P0078",
+      "arrival_clock": 657.27,
+      "enter_facility_clock": 657.27,
+      "waiting_time": 0.0,
+      "service_time": 5.89,
+      "departure_clock": 663.16,
+      "time_in_system": 5.89
+    },
+    {
+      "patient_id": "P0079",
+      "arrival_clock": 689.92,
+      "enter_facility_clock": 689.92,
+      "waiting_time": 0.0,
+      "service_time": 2.36,
+      "departure_clock": 692.28,
+      "time_in_system": 2.36
+    },
+    {
+      "patient_id": "P0080",
+      "arrival_clock": 692.99,
+      "enter_facility_clock": 692.99,
+      "waiting_time": 0.0,
+      "service_time": 3.21,
+      "departure_clock": 696.2,
+      "time_in_system": 3.21
+    },
+    {
+      "patient_id": "P0081",
+      "arrival_clock": 693.21,
+      "enter_facility_clock": 693.21,
+      "waiting_time": 0.0,
+      "service_time": 4.12,
+      "departure_clock": 697.33,
+      "time_in_system": 4.12
+    },
+    {
+      "patient_id": "P0082",
+      "arrival_clock": 702.02,
+      "enter_facility_clock": 702.02,
+      "waiting_time": 0.0,
+      "service_time": 3.56,
+      "departure_clock": 705.58,
+      "time_in_system": 3.56
+    }
+  ]
+}

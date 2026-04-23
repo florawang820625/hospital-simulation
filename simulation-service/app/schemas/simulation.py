@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field
+
+from simulation_core.defaults import (
+    DEFAULT_EXAM_PROBABILITY,
+    DEFAULT_NUM_CT,
+    DEFAULT_NUM_DOCTORS,
+    DEFAULT_NUM_LAB,
+    DEFAULT_NUM_NURSES,
+    DEFAULT_NUM_XRAY,
+    DEFAULT_RANDOM_SEED,
+    DEFAULT_SIMULATION_TIME,
+)
+
+
+class SimulationParamsRequest(BaseModel):
+    num_doctors: int = Field(default=DEFAULT_NUM_DOCTORS, ge=1, le=32)
+    num_nurses: int = Field(default=DEFAULT_NUM_NURSES, ge=1, le=64)
+    num_ct: int = Field(default=DEFAULT_NUM_CT, ge=0, le=16)
+    num_xray: int = Field(default=DEFAULT_NUM_XRAY, ge=0, le=16)
+    num_lab: int = Field(default=DEFAULT_NUM_LAB, ge=0, le=32)
+    simulation_time: int = Field(default=DEFAULT_SIMULATION_TIME, ge=60, le=60 * 24 * 30)
+    exam_probability: float = Field(default=DEFAULT_EXAM_PROBABILITY, ge=0.0, le=1.0)
+    random_seed: int | None = Field(default=DEFAULT_RANDOM_SEED)
+
+
+class ScenarioResponse(BaseModel):
+    slug: str
+    title: str
+    description: str
+    sample_result_slug: str
+    parameters: SimulationParamsRequest
+
+
+class SimulationSummaryResponse(BaseModel):
+    total_patients: int
+    total_events: int
+    average_waiting_time: float
+    p95_waiting_time: float
+    average_time_in_system: float
+    average_service_time: float
+    resource_utilization: dict[str, float]
+
+
+class SimulationRecordResponse(BaseModel):
+    simulation_id: str
+    status: Literal["queued", "completed", "failed"]
+    created_at: datetime
+    parameters: SimulationParamsRequest
+    artifacts: dict[str, str] = Field(default_factory=dict)
+    summary: SimulationSummaryResponse | None = None
+    error_message: str | None = None
+    result_url: str | None = None
+
+
+class SimulationResultResponse(SimulationRecordResponse):
+    event_log: list[dict[str, Any]] = Field(default_factory=list)
+    patient_summary: list[dict[str, Any]] = Field(default_factory=list)
