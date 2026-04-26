@@ -20,13 +20,16 @@ Accepts:
 
 ```json
 {
-  "num_doctors": 1,
-  "num_nurses": 2,
+  "scheduling_strategy": "SBP",
+  "num_doctors": 5,
+  "num_doctors_night": 3,
   "num_ct": 1,
   "num_xray": 1,
   "num_lab": 1,
+  "num_ultrasound": 1,
   "simulation_time": 720,
   "exam_probability": 0.6,
+  "arrival_rate_multiplier": 1.0,
   "random_seed": 7
 }
 ```

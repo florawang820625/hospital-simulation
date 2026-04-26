@@ -3,13 +3,16 @@
     "method": "POST",
     "path": "/api/v1/simulations",
     "body": {
-      "num_doctors": 1,
-      "num_nurses": 2,
+      "scheduling_strategy": "SBP",
+      "num_doctors": 5,
+      "num_doctors_night": 3,
       "num_ct": 1,
       "num_xray": 1,
       "num_lab": 1,
+      "num_ultrasound": 1,
       "simulation_time": 720,
       "exam_probability": 0.6,
+      "arrival_rate_multiplier": 1.0,
       "random_seed": 7
     }
   },
@@ -27,10 +30,10 @@
       "average_service_time": 21.9,
       "resource_utilization": {
         "doctors": 0.9863,
-        "nurses": 0.2109,
         "ct": 0.3496,
         "xray": 0.2239,
-        "lab": 0.2898
+        "lab": 0.2898,
+        "ultrasound": 0.1184
       }
     },
     "artifacts": {

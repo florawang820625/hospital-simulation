@@ -21,7 +21,7 @@
 
 ## Core Design Decisions
 
-- The simulation core no longer mutates `config.py`.
+- The simulation core no longer relies on project-root compatibility modules for runtime behavior.
 - The simulation core no longer depends on pandas for export or merge logic.
 - File export is separated from the simulation engine through `export_result()` and `LocalArtifactStore`.
-- Legacy root files (`main.py`, `simulation.py`, and friends) are now compatibility wrappers that forward to the new service package.
+- The only remaining root-level compatibility entrypoint is `main.py`, which forwards to the service CLI for convenience.
