@@ -112,6 +112,36 @@
   color: var(--danger);
 }
 
+.view-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 253, 250, 0.92);
+  box-shadow: var(--shadow-soft);
+}
+
+.view-tab {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.view-tab.is-active {
+  background: linear-gradient(135deg, #0f766e, #0e7490);
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(14, 116, 144, 0.18);
+}
+
 .layout-grid {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
@@ -329,6 +359,10 @@
   text-decoration: none;
 }
 
+.reference-page {
+  margin-bottom: 20px;
+}
+
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -337,8 +371,24 @@
   margin-bottom: 16px;
 }
 
+.filter-controls {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) repeat(3, minmax(160px, 1fr)) auto;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
 .search-block {
   flex: 1 1 auto;
+}
+
+.select-block {
+  min-width: 0;
+}
+
+.filter-select {
+  appearance: none;
 }
 
 .filter-row {
@@ -371,7 +421,7 @@
 
 .log-table {
   width: 100%;
-  min-width: 940px;
+  min-width: 1180px;
   border-collapse: collapse;
 }
 
@@ -403,6 +453,48 @@
 .mono-cell {
   font-family: var(--font-mono);
   font-size: 0.94rem;
+}
+
+.time-cell,
+.time-range-cell {
+  white-space: nowrap;
+}
+
+.reference-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.reference-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(180, 83, 9, 0.12);
+  color: #9a3412;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.reference-caption {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+}
+
+.reference-table {
+  min-width: 760px;
+}
+
+.reference-table thead th:not(:first-child),
+.reference-table tbody td:not(:first-child) {
+  text-align: right;
+}
+
+.reference-table tbody td:first-child {
+  color: var(--ink-strong);
 }
 
 .event-badge {
@@ -454,7 +546,8 @@
   .layout-grid,
   .hero-metrics,
   .summary-grid,
-  .form-grid {
+  .form-grid,
+  .filter-controls {
     grid-template-columns: 1fr;
   }
 
@@ -490,6 +583,6 @@
   }
 
   .log-table {
-    min-width: 760px;
+    min-width: 980px;
   }
 }

@@ -1,11 +1,23 @@
 const FIELD_CONFIG = [
-  { key: 'num_doctors', label: '醫師數量', min: 1, step: 1 },
-  { key: 'num_nurses', label: '護理師數量', min: 1, step: 1 },
+  {
+    key: 'scheduling_strategy',
+    label: '排程策略',
+    type: 'select',
+    options: [
+      { value: 'SBP', label: 'SBP' },
+      { value: 'ALT', label: 'ALT' },
+      { value: 'IFP', label: 'IFP' },
+    ],
+  },
+  { key: 'num_doctors', label: '日間/下午醫師數', min: 1, step: 1 },
+  { key: 'num_doctors_night', label: '夜班醫師數', min: 1, step: 1 },
   { key: 'num_ct', label: 'CT 資源數', min: 0, step: 1 },
   { key: 'num_xray', label: 'Xray 資源數', min: 0, step: 1 },
   { key: 'num_lab', label: 'Lab 資源數', min: 0, step: 1 },
+  { key: 'num_ultrasound', label: 'Ultrasound 資源數', min: 0, step: 1 },
   { key: 'simulation_time', label: '模擬分鐘數', min: 60, step: 60 },
-  { key: 'exam_probability', label: '檢查機率', min: 0, max: 1, step: 0.05 },
+  { key: 'exam_probability', label: '需檢查比例', min: 0, max: 1, step: 0.05 },
+  { key: 'arrival_rate_multiplier', label: '到診倍率', min: 0.1, max: 3, step: 0.05 },
   { key: 'random_seed', label: '隨機種子', min: 0, step: 1 },
 ];
 
@@ -24,7 +36,7 @@ function SimulationForm({
           <h2 className="panel-title">即時模擬參數</h2>
         </div>
         <p className="panel-copy">
-          這一層只負責收集參數並送到 FastAPI。沒有後端時，畫面會自動退回樣本資料模式。
+          這組表單現在對齊論文模型：NHPP 到診、SBP/ALT/IFP 排程、日夜醫師班表與四種檢查資源。
         </p>
       </div>
 
@@ -32,21 +44,36 @@ function SimulationForm({
         {FIELD_CONFIG.map((field) => (
           <label key={field.key} className="field-group">
             <span className="field-label">{field.label}</span>
-            <input
-              className="field-input"
-              type="number"
-              min={field.min}
-              max={field.max}
-              step={field.step}
-              value={values[field.key]}
-              disabled={disabled}
-              onChange={(event) => {
-                const nextValue = field.key === 'exam_probability'
-                  ? Number(event.target.value)
-                  : Number.parseInt(event.target.value || '0', 10);
-                onFieldChange(field.key, Number.isNaN(nextValue) ? field.min ?? 0 : nextValue);
-              }}
-            />
+            {field.type === 'select' ? (
+              <select
+                className="field-input"
+                value={values[field.key]}
+                disabled={disabled}
+                onChange={(event) => onFieldChange(field.key, event.target.value)}
+              >
+                {field.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="field-input"
+                type="number"
+                min={field.min}
+                max={field.max}
+                step={field.step}
+                value={values[field.key]}
+                disabled={disabled}
+                onChange={(event) => {
+                  const nextValue = ['exam_probability', 'arrival_rate_multiplier'].includes(field.key)
+                    ? Number(event.target.value)
+                    : Number.parseInt(event.target.value || '0', 10);
+                  onFieldChange(field.key, Number.isNaN(nextValue) ? field.min ?? 0 : nextValue);
+                }}
+              />
+            )}
           </label>
         ))}
       </div>

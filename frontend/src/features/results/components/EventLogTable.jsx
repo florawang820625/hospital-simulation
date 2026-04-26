@@ -1,9 +1,44 @@
 import { useDeferredValue, useMemo, useState } from 'react';
-import { formatInteger, formatNumber, getEventTone } from '../../../lib/formatters.js';
+import {
+  formatDuration,
+  SIMULATION_WEEKDAYS,
+  formatInteger,
+  formatSimulationClock,
+  getEventTone,
+  getSimulationWeekdayIndex,
+} from '../../../lib/formatters.js';
+
+const EVENT_CATEGORY_OPTIONS = [
+  { value: 'all', label: '全部類別' },
+  { value: 'arrival', label: '到離院' },
+  { value: 'doctor', label: '初診流程' },
+  { value: 'exam', label: '檢查流程' },
+  { value: 'return', label: '複診流程' },
+];
+
+function getEventCategory(eventType = '') {
+  if (eventType.includes('抵達') || eventType.includes('離院')) return 'arrival';
+  if (eventType.includes('複診')) return 'return';
+  if (
+    eventType.includes('檢查')
+    || eventType.includes('報告')
+    || eventType.includes('CT')
+    || eventType.includes('Lab')
+    || eventType.includes('Xray')
+    || eventType.includes('超音波')
+    || eventType.includes('Ultrasound')
+  ) {
+    return 'exam';
+  }
+  if (eventType.includes('初診')) return 'doctor';
+  return 'all';
+}
 
 function EventLogTable({ logs }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilters, setActiveFilters] = useState([]);
+  const [selectedWeekday, setSelectedWeekday] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedEventType, setSelectedEventType] = useState('all');
   const deferredSearchTerm = useDeferredValue(searchTerm);
 
   const eventTypes = useMemo(
@@ -11,12 +46,25 @@ function EventLogTable({ logs }) {
     [logs]
   );
 
+  const availableEventTypes = useMemo(
+    () =>
+      eventTypes.filter(
+        (eventType) => selectedCategory === 'all' || getEventCategory(eventType) === selectedCategory
+      ),
+    [eventTypes, selectedCategory]
+  );
+
+  const activeEventType =
+    selectedEventType === 'all' || availableEventTypes.includes(selectedEventType)
+      ? selectedEventType
+      : 'all';
+
   const filteredLogs = useMemo(() => {
     const keyword = deferredSearchTerm.trim().toLowerCase();
     return (logs || []).filter((log) => {
       const matchesSearch =
-        keyword.length === 0 ||
-        [
+        keyword.length === 0
+        || [
           log.patient,
           log.triage_level,
           log.event_type,
@@ -24,12 +72,18 @@ function EventLogTable({ logs }) {
           log.desc,
         ].some((value) => String(value || '').toLowerCase().includes(keyword));
 
-      const matchesFilter =
-        activeFilters.length === 0 || activeFilters.includes(log.event_type);
+      const matchesCategory =
+        selectedCategory === 'all' || getEventCategory(log.event_type) === selectedCategory;
 
-      return matchesSearch && matchesFilter;
+      const matchesWeekday =
+        selectedWeekday === 'all' || getSimulationWeekdayIndex(log.timestamp) === Number(selectedWeekday);
+
+      const matchesEventType =
+        activeEventType === 'all' || log.event_type === activeEventType;
+
+      return matchesSearch && matchesWeekday && matchesCategory && matchesEventType;
     });
-  }, [activeFilters, deferredSearchTerm, logs]);
+  }, [activeEventType, deferredSearchTerm, logs, selectedCategory, selectedWeekday]);
 
   return (
     <section className="panel-card">
@@ -40,10 +94,11 @@ function EventLogTable({ logs }) {
         </div>
         <p className="panel-copy">
           目前顯示 {formatInteger(filteredLogs.length)} / {formatInteger(logs?.length || 0)} 筆事件。
+          每一列都同步帶出病人的到院時刻、離院時刻與在院時間，減少自己換算分鐘數的負擔。
         </p>
       </div>
 
-      <div className="toolbar">
+      <div className="filter-controls">
         <label className="search-block">
           <span className="field-label">搜尋事件</span>
           <input
@@ -55,48 +110,82 @@ function EventLogTable({ logs }) {
           />
         </label>
 
+        <label className="select-block">
+          <span className="field-label">星期</span>
+          <select
+            className="field-input filter-select"
+            value={selectedWeekday}
+            onChange={(event) => setSelectedWeekday(event.target.value)}
+          >
+            <option value="all">全部星期</option>
+            {SIMULATION_WEEKDAYS.map((day, index) => (
+              <option key={day} value={index}>
+                {day}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="select-block">
+          <span className="field-label">事件分類</span>
+          <select
+            className="field-input filter-select"
+            value={selectedCategory}
+            onChange={(event) => {
+              setSelectedCategory(event.target.value);
+              setSelectedEventType('all');
+            }}
+          >
+            {EVENT_CATEGORY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="select-block">
+          <span className="field-label">事件名稱</span>
+          <select
+            className="field-input filter-select"
+            value={activeEventType}
+            onChange={(event) => setSelectedEventType(event.target.value)}
+          >
+            <option value="all">全部事件</option>
+            {availableEventTypes.map((eventType) => (
+              <option key={eventType} value={eventType}>
+                {eventType}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <button
           className="ghost-button"
           type="button"
           onClick={() => {
             setSearchTerm('');
-            setActiveFilters([]);
+            setSelectedWeekday('all');
+            setSelectedCategory('all');
+            setSelectedEventType('all');
           }}
         >
           清除篩選
         </button>
       </div>
 
-      <div className="filter-row">
-        {eventTypes.map((type) => (
-          <button
-            key={type}
-            type="button"
-            className={`filter-chip ${activeFilters.includes(type) ? 'is-active' : ''}`}
-            onClick={() =>
-              setActiveFilters((current) =>
-                current.includes(type)
-                  ? current.filter((item) => item !== type)
-                  : [...current, type]
-              )
-            }
-          >
-            {type}
-          </button>
-        ))}
-      </div>
-
       <div className="table-wrap">
         <table className="log-table">
           <thead>
             <tr>
-              <th>時間</th>
+              <th>模擬時刻</th>
               <th>事件</th>
               <th>病人</th>
               <th>檢傷</th>
-              <th>等待</th>
-              <th>離院</th>
-              <th>系統停留</th>
+              <th>到院時刻</th>
+              <th>離院時刻</th>
+              <th>初診等待</th>
+              <th>在院時間</th>
               <th>資源</th>
               <th>描述</th>
             </tr>
@@ -104,7 +193,7 @@ function EventLogTable({ logs }) {
           <tbody>
             {filteredLogs.map((log, index) => (
               <tr key={`${log.patient}-${log.timestamp}-${index}`}>
-                <td className="mono-cell">{formatNumber(log.timestamp)}</td>
+                <td className="mono-cell time-cell">{formatSimulationClock(log.timestamp)}</td>
                 <td>
                   <span className={`event-badge ${getEventTone(log.event_type)}`}>
                     {log.event_type}
@@ -112,9 +201,10 @@ function EventLogTable({ logs }) {
                 </td>
                 <td className="mono-cell">{log.patient}</td>
                 <td>{log.triage_level}</td>
-                <td className="mono-cell">{formatNumber(log.waiting_time)}</td>
-                <td className="mono-cell">{formatNumber(log.departure_clock)}</td>
-                <td className="mono-cell">{formatNumber(log.time_in_system)}</td>
+                <td className="mono-cell time-cell">{`${formatSimulationClock(log.arrival_clock)} 到院`}</td>
+                <td className="mono-cell time-cell">{`${formatSimulationClock(log.departure_clock)} 離院`}</td>
+                <td>{formatDuration(log.waiting_time)}</td>
+                <td>{formatDuration(log.time_in_system)}</td>
                 <td>{log.resource}</td>
                 <td>{log.desc}</td>
               </tr>
@@ -123,7 +213,7 @@ function EventLogTable({ logs }) {
         </table>
 
         {filteredLogs.length === 0 ? (
-          <div className="empty-state">沒有符合目前搜尋或篩選條件的事件。</div>
+          <div className="empty-state">目前星期或篩選條件下沒有事件。</div>
         ) : null}
       </div>
     </section>

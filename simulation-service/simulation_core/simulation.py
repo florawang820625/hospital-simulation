@@ -2,33 +2,58 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import random
 from typing import Any
 
 import simpy
 
 from .defaults import (
-    DEFAULT_MEAN_INTERARRIVAL_MINUTES,
+    DEFAULT_CT_DURATION,
+    DEFAULT_CT_EXAM_PROBABILITY,
+    DEFAULT_CT_REPORT_DELAY,
+    DEFAULT_FOLLOW_UP_CONSULT_MAX,
+    DEFAULT_FOLLOW_UP_CONSULT_MEAN,
+    DEFAULT_FOLLOW_UP_CONSULT_MIN,
+    DEFAULT_INITIAL_CONSULT_MAX,
+    DEFAULT_INITIAL_CONSULT_MEAN,
+    DEFAULT_INITIAL_CONSULT_MIN,
+    DEFAULT_LAB_DURATION,
+    DEFAULT_LAB_EXAM_PROBABILITY,
+    DEFAULT_LAB_REPORT_DELAY,
+    DEFAULT_LEVEL3_SHARE,
+    DEFAULT_LEVEL4_SHARE,
+    DEFAULT_ULTRASOUND_DURATION,
+    DEFAULT_ULTRASOUND_EXAM_PROBABILITY,
+    DEFAULT_ULTRASOUND_REPORT_DELAY,
+    DEFAULT_XRAY_DURATION,
+    DEFAULT_XRAY_EXAM_PROBABILITY,
+    DEFAULT_XRAY_REPORT_DELAY,
     EVENT_DISCHARGE,
     EVENT_END_CT,
-    EVENT_END_DOCTOR,
+    EVENT_END_INITIAL,
     EVENT_END_LAB,
-    EVENT_END_NURSE,
     EVENT_END_RETURN,
+    EVENT_END_ULTRASOUND,
     EVENT_END_XRAY,
-    EVENT_QUEUE_DOCTOR,
     EVENT_QUEUE_EXAM,
-    EVENT_QUEUE_NURSE,
+    EVENT_QUEUE_INITIAL,
     EVENT_QUEUE_RETURN,
+    EVENT_REPORT_READY_CT,
+    EVENT_REPORT_READY_LAB,
+    EVENT_REPORT_READY_ULTRASOUND,
+    EVENT_REPORT_READY_XRAY,
     EVENT_START_CT,
-    EVENT_START_DOCTOR,
+    EVENT_START_INITIAL,
     EVENT_START_LAB,
-    EVENT_START_NURSE,
     EVENT_START_RETURN,
+    EVENT_START_ULTRASOUND,
     EVENT_START_XRAY,
+    PAPER_ARRIVAL_RATES_BY_DAY,
 )
 from .hospital_env import Hospital
 from .models import (
+    DoctorConsultationRequest,
     PatientRecord,
     SimulationParameters,
     SimulationResult,
@@ -39,7 +64,210 @@ from .models import (
     mean_or_zero,
     percentile,
 )
-from .scheduler import calculate_priority
+
+
+EXAM_SEQUENCE = (
+    {
+        "key": "ct",
+        "capacity_field": "num_ct",
+        "probability": DEFAULT_CT_EXAM_PROBABILITY,
+        "resource_attr": "ct_scanner",
+        "resource_name": "CT",
+        "busy_key": "ct",
+        "duration": DEFAULT_CT_DURATION,
+        "report_delay": DEFAULT_CT_REPORT_DELAY,
+        "start_event": EVENT_START_CT,
+        "end_event": EVENT_END_CT,
+        "report_event": EVENT_REPORT_READY_CT,
+    },
+    {
+        "key": "xray",
+        "capacity_field": "num_xray",
+        "probability": DEFAULT_XRAY_EXAM_PROBABILITY,
+        "resource_attr": "xray",
+        "resource_name": "Xray",
+        "busy_key": "xray",
+        "duration": DEFAULT_XRAY_DURATION,
+        "report_delay": DEFAULT_XRAY_REPORT_DELAY,
+        "start_event": EVENT_START_XRAY,
+        "end_event": EVENT_END_XRAY,
+        "report_event": EVENT_REPORT_READY_XRAY,
+    },
+    {
+        "key": "lab",
+        "capacity_field": "num_lab",
+        "probability": DEFAULT_LAB_EXAM_PROBABILITY,
+        "resource_attr": "lab",
+        "resource_name": "Lab",
+        "busy_key": "lab",
+        "duration": DEFAULT_LAB_DURATION,
+        "report_delay": DEFAULT_LAB_REPORT_DELAY,
+        "start_event": EVENT_START_LAB,
+        "end_event": EVENT_END_LAB,
+        "report_event": EVENT_REPORT_READY_LAB,
+    },
+    {
+        "key": "ultrasound",
+        "capacity_field": "num_ultrasound",
+        "probability": DEFAULT_ULTRASOUND_EXAM_PROBABILITY,
+        "resource_attr": "ultrasound",
+        "resource_name": "Ultrasound",
+        "busy_key": "ultrasound",
+        "duration": DEFAULT_ULTRASOUND_DURATION,
+        "report_delay": DEFAULT_ULTRASOUND_REPORT_DELAY,
+        "start_event": EVENT_START_ULTRASOUND,
+        "end_event": EVENT_END_ULTRASOUND,
+        "report_event": EVENT_REPORT_READY_ULTRASOUND,
+    },
+)
+
+
+def sample_truncated_exponential(
+    rng: random.Random,
+    *,
+    mean: float,
+    minimum: float,
+    maximum: float,
+) -> float:
+    rate = 1.0 / mean
+    lower_cdf = 1.0 - math.exp(-rate * minimum)
+    upper_cdf = 1.0 - math.exp(-rate * maximum)
+    draw = rng.uniform(lower_cdf, upper_cdf)
+    return -math.log1p(-draw) / rate
+
+
+def sample_poisson(rng: random.Random, rate: float) -> int:
+    if rate <= 0:
+        return 0
+
+    threshold = math.exp(-rate)
+    count = 0
+    product = 1.0
+
+    while product > threshold:
+        count += 1
+        product *= rng.random()
+
+    return count - 1
+
+
+def get_arrival_rate(hour_start: float, parameters: SimulationParameters) -> float:
+    day_index = int(hour_start // 1440) % 7
+    hour_index = int((hour_start % 1440) // 60)
+    return PAPER_ARRIVAL_RATES_BY_DAY[day_index][hour_index] * parameters.arrival_rate_multiplier
+
+
+def select_exam_plan(parameters: SimulationParameters, rng: random.Random) -> list[dict[str, Any]]:
+    if rng.random() >= parameters.exam_probability:
+        return []
+
+    available_exams = [
+        exam
+        for exam in EXAM_SEQUENCE
+        if getattr(parameters, exam["capacity_field"]) > 0
+    ]
+    if not available_exams:
+        return []
+
+    selected = [
+        exam
+        for exam in available_exams
+        if rng.random() < float(exam["probability"])
+    ]
+    if not selected:
+        selected = [max(available_exams, key=lambda exam: float(exam["probability"]))]
+
+    return selected
+
+
+def maybe_finish_simulation(completion_state: dict[str, Any]) -> None:
+    if (
+        completion_state["arrivals_completed"]
+        and completion_state["active_patients"] == 0
+        and not completion_state["done_event"].triggered
+    ):
+        completion_state["done_event"].succeed()
+
+
+def request_doctor_consultation(
+    env: simpy.Environment,
+    patient: PatientRecord,
+    hospital: Hospital,
+    stage: str,
+    duration: float,
+) -> Any:
+    queue_event = EVENT_QUEUE_INITIAL if stage == "initial" else EVENT_QUEUE_RETURN
+    patient.record_event(env.now, queue_event)
+    request = DoctorConsultationRequest(
+        patient=patient,
+        stage=stage,
+        queued_at=env.now,
+        duration=duration,
+        completion_event=env.event(),
+    )
+    hospital.enqueue_doctor_request(request)
+    yield request.completion_event
+
+
+def perform_exam(
+    env: simpy.Environment,
+    patient: PatientRecord,
+    hospital: Hospital,
+    exam: dict[str, Any],
+) -> Any:
+    resource = getattr(hospital, exam["resource_attr"])
+    if resource is None:
+        return env.now
+
+    with resource.request() as req:
+        yield req
+        patient.record_event(env.now, exam["start_event"], exam["resource_name"])
+        duration = float(exam["duration"])
+        yield env.timeout(duration)
+        hospital.record_busy_time(str(exam["busy_key"]), duration)
+        patient.record_event(env.now, exam["end_event"], exam["resource_name"])
+
+    return env.now + float(exam["report_delay"])
+
+
+def doctor_worker(
+    env: simpy.Environment,
+    doctor_index: int,
+    hospital: Hospital,
+    parameters: SimulationParameters,
+) -> Any:
+    doctor_name = f"Doctor_{doctor_index}"
+
+    while True:
+        if not parameters.is_doctor_active(doctor_index, env.now):
+            yield env.timeout(parameters.minutes_until_doctor_status_change(doctor_index, env.now))
+            continue
+
+        request = hospital.pop_next_doctor_request(env.now)
+        if request is None:
+            wait_for = parameters.minutes_until_doctor_status_change(doctor_index, env.now)
+            yield simpy.AnyOf(
+                env,
+                [hospital.doctor_queue_event, env.timeout(wait_for)],
+            )
+            continue
+
+        if request.stage == "initial":
+            start_event = EVENT_START_INITIAL
+            end_event = EVENT_END_INITIAL
+        else:
+            start_event = EVENT_START_RETURN
+            end_event = EVENT_END_RETURN
+
+        duration = request.duration
+
+        request.patient.record_event(env.now, start_event, doctor_name)
+        yield env.timeout(duration)
+        hospital.record_busy_time("doctors", duration)
+        request.patient.record_event(env.now, end_event, doctor_name)
+
+        if not request.completion_event.triggered:
+            request.completion_event.succeed(env.now)
 
 
 def patient_flow(
@@ -47,85 +275,58 @@ def patient_flow(
     patient: PatientRecord,
     hospital: Hospital,
     parameters: SimulationParameters,
-    rng: random.Random,
+    patient_rng: random.Random,
+    completion_state: dict[str, Any],
 ) -> Any:
-    patient.record_event(env.now, EVENT_QUEUE_NURSE)
+    try:
+        initial_duration = sample_truncated_exponential(
+            patient_rng,
+            mean=DEFAULT_INITIAL_CONSULT_MEAN,
+            minimum=DEFAULT_INITIAL_CONSULT_MIN,
+            maximum=DEFAULT_INITIAL_CONSULT_MAX,
+        )
+        yield from request_doctor_consultation(
+            env,
+            patient,
+            hospital,
+            "initial",
+            initial_duration,
+        )
 
-    with hospital.nurses.request() as req:
-        yield req
-        patient.record_event(env.now, EVENT_START_NURSE, "Nurse")
-        duration = rng.uniform(2, 6)
-        yield env.timeout(duration)
-        hospital.record_busy_time("nurses", duration)
-        patient.record_event(env.now, EVENT_END_NURSE, "Nurse")
+        exam_plan = select_exam_plan(parameters, patient_rng)
+        if exam_plan:
+            patient.record_event(env.now, EVENT_QUEUE_EXAM)
+            report_readiness: list[tuple[float, str, str]] = []
 
-    patient.record_event(env.now, EVENT_QUEUE_DOCTOR)
-    doctor_priority = calculate_priority(patient, env.now, parameters)
+            for exam in exam_plan:
+                ready_at = yield from perform_exam(env, patient, hospital, exam)
+                report_readiness.append((ready_at, str(exam["report_event"]), str(exam["resource_name"])))
 
-    with hospital.doctors.request(priority=doctor_priority) as req:
-        yield req
-        patient.record_event(env.now, EVENT_START_DOCTOR, "Doctor")
-        duration = rng.uniform(5, 15)
-        yield env.timeout(duration)
-        hospital.record_busy_time("doctors", duration)
-        patient.record_event(env.now, EVENT_END_DOCTOR, "Doctor")
+            report_readiness.sort(key=lambda item: (item[0], item[1]))
+            for ready_at, report_event, resource_name in report_readiness:
+                if env.now < ready_at:
+                    yield env.timeout(ready_at - env.now)
+                patient.record_event(env.now, report_event, resource_name)
 
-    if rng.random() < parameters.exam_probability:
-        patient.record_event(env.now, EVENT_QUEUE_EXAM)
-        exam_choices: list[tuple[str, float]] = []
+            patient.triage_level = "複診"
+            follow_up_duration = sample_truncated_exponential(
+                patient_rng,
+                mean=DEFAULT_FOLLOW_UP_CONSULT_MEAN,
+                minimum=DEFAULT_FOLLOW_UP_CONSULT_MIN,
+                maximum=DEFAULT_FOLLOW_UP_CONSULT_MAX,
+            )
+            yield from request_doctor_consultation(
+                env,
+                patient,
+                hospital,
+                "follow_up",
+                follow_up_duration,
+            )
 
-        if parameters.num_ct > 0:
-            exam_choices.append(("ct", 0.4))
-        if parameters.num_xray > 0:
-            exam_choices.append(("xray", 0.35))
-        if parameters.num_lab > 0:
-            exam_choices.append(("lab", 0.25))
-
-        if exam_choices:
-            exam_type = rng.choices(
-                [name for name, _weight in exam_choices],
-                weights=[weight for _name, weight in exam_choices],
-                k=1,
-            )[0]
-
-            if exam_type == "ct":
-                with hospital.ct_scanner.request() as req:
-                    yield req
-                    patient.record_event(env.now, EVENT_START_CT, "CT_Scanner")
-                    duration = rng.uniform(15, 30)
-                    yield env.timeout(duration)
-                    hospital.record_busy_time("ct", duration)
-                    patient.record_event(env.now, EVENT_END_CT, "CT_Scanner")
-            elif exam_type == "xray":
-                with hospital.xray.request() as req:
-                    yield req
-                    patient.record_event(env.now, EVENT_START_XRAY, "Xray")
-                    duration = rng.uniform(8, 20)
-                    yield env.timeout(duration)
-                    hospital.record_busy_time("xray", duration)
-                    patient.record_event(env.now, EVENT_END_XRAY, "Xray")
-            else:
-                with hospital.lab.request() as req:
-                    yield req
-                    patient.record_event(env.now, EVENT_START_LAB, "Lab")
-                    duration = rng.uniform(10, 25)
-                    yield env.timeout(duration)
-                    hospital.record_busy_time("lab", duration)
-                    patient.record_event(env.now, EVENT_END_LAB, "Lab")
-
-        patient.triage_level = "Return"
-        patient.record_event(env.now, EVENT_QUEUE_RETURN)
-        return_priority = calculate_priority(patient, env.now, parameters)
-
-        with hospital.doctors.request(priority=return_priority) as req:
-            yield req
-            patient.record_event(env.now, EVENT_START_RETURN, "Doctor")
-            duration = rng.uniform(3, 10)
-            yield env.timeout(duration)
-            hospital.record_busy_time("doctors", duration)
-            patient.record_event(env.now, EVENT_END_RETURN, "Doctor")
-
-    patient.record_event(env.now, EVENT_DISCHARGE)
+        patient.record_event(env.now, EVENT_DISCHARGE)
+    finally:
+        completion_state["active_patients"] -= 1
+        maybe_finish_simulation(completion_state)
 
 
 def patient_arrival(
@@ -133,22 +334,47 @@ def patient_arrival(
     hospital: Hospital,
     parameters: SimulationParameters,
     patient_list: list[PatientRecord],
-    rng: random.Random,
+    arrival_rng: random.Random,
+    completion_state: dict[str, Any],
 ) -> Any:
     patient_id = 1
-    while True:
-        yield env.timeout(rng.expovariate(1.0 / DEFAULT_MEAN_INTERARRIVAL_MINUTES))
-        triage_level = rng.choices(["Level III", "Level IV"], weights=[0.7, 0.3], k=1)[0]
+    simulation_horizon = int(parameters.simulation_time)
 
-        patient = PatientRecord(
-            patient_id=f"P{patient_id:04d}",
-            triage_level=triage_level,
-            arrival_time=env.now,
+    for hour_start in range(0, simulation_horizon, 60):
+        interval_minutes = min(60, simulation_horizon - hour_start)
+        hourly_rate = get_arrival_rate(hour_start, parameters) * (interval_minutes / 60.0)
+        arrivals = sample_poisson(arrival_rng, hourly_rate)
+        arrival_times = sorted(
+            hour_start + arrival_rng.uniform(0, interval_minutes)
+            for _ in range(arrivals)
         )
-        patient_list.append(patient)
 
-        env.process(patient_flow(env, patient, hospital, parameters, rng))
-        patient_id += 1
+        for arrival_time in arrival_times:
+            if arrival_time > env.now:
+                yield env.timeout(arrival_time - env.now)
+
+            triage_level = arrival_rng.choices(
+                ["Level III", "Level IV"],
+                weights=[DEFAULT_LEVEL3_SHARE, DEFAULT_LEVEL4_SHARE],
+                k=1,
+            )[0]
+            patient = PatientRecord(
+                patient_id=f"P{patient_id:04d}",
+                triage_level=triage_level,
+                arrival_time=env.now,
+            )
+            patient_list.append(patient)
+            completion_state["active_patients"] += 1
+            patient_rng = random.Random(arrival_rng.randrange(2**63))
+            env.process(patient_flow(env, patient, hospital, parameters, patient_rng, completion_state))
+            patient_id += 1
+
+        interval_end = hour_start + interval_minutes
+        if env.now < interval_end:
+            yield env.timeout(interval_end - env.now)
+
+    completion_state["arrivals_completed"] = True
+    maybe_finish_simulation(completion_state)
 
 
 def build_summary(
@@ -156,22 +382,23 @@ def build_summary(
     hospital: Hospital,
     event_log: list[dict[str, Any]],
     patient_summary: list[dict[str, Any]],
+    completed_at: float,
 ) -> SimulationSummary:
     waiting_times = [float(item["waiting_time"]) for item in patient_summary]
     time_in_system_values = [float(item["time_in_system"]) for item in patient_summary]
     service_times = [float(item["service_time"]) for item in patient_summary]
 
     utilization_capacity = {
-        "doctors": max(parameters.num_doctors, 1),
-        "nurses": max(parameters.num_nurses, 1),
-        "ct": max(parameters.num_ct, 1),
-        "xray": max(parameters.num_xray, 1),
-        "lab": max(parameters.num_lab, 1),
+        "doctors": parameters.doctor_capacity_minutes(completed_at),
+        "ct": parameters.num_ct * completed_at,
+        "xray": parameters.num_xray * completed_at,
+        "lab": parameters.num_lab * completed_at,
+        "ultrasound": parameters.num_ultrasound * completed_at,
     }
 
     resource_utilization = {}
     for resource_name, busy_minutes in hospital.busy_time.items():
-        denominator = utilization_capacity[resource_name] * parameters.simulation_time
+        denominator = utilization_capacity.get(resource_name, 0.0)
         utilization = 0.0 if denominator <= 0 else round(busy_minutes / denominator, 4)
         resource_utilization[resource_name] = utilization
 
@@ -188,19 +415,27 @@ def build_summary(
 
 def run_simulation(parameters: SimulationParameters | None = None) -> SimulationResult:
     params = parameters or SimulationParameters()
-    rng = random.Random(params.random_seed)
+    arrival_rng = random.Random(params.random_seed)
 
     env = simpy.Environment()
     hospital = Hospital(env, params)
     all_patients: list[PatientRecord] = []
+    completion_state = {
+        "active_patients": 0,
+        "arrivals_completed": False,
+        "done_event": env.event(),
+    }
 
-    env.process(patient_arrival(env, hospital, params, all_patients, rng))
-    env.run(until=params.simulation_time)
+    for doctor_index in range(1, params.max_doctors + 1):
+        env.process(doctor_worker(env, doctor_index, hospital, params))
+
+    env.process(patient_arrival(env, hospital, params, all_patients, arrival_rng, completion_state))
+    env.run(until=completion_state["done_event"])
 
     raw_logs = extract_all_logs(all_patients)
     patient_summary = extract_patient_summaries(all_patients)
     enriched_event_log = enrich_event_log(raw_logs, patient_summary)
-    summary = build_summary(params, hospital, enriched_event_log, patient_summary)
+    summary = build_summary(params, hospital, enriched_event_log, patient_summary, env.now)
 
     return SimulationResult(
         parameters=params,

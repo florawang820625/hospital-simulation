@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from simulation_core.defaults import DEFAULT_SCENARIOS
+from simulation_core.defaults import DEFAULT_SCENARIOS, VALID_SCHEDULING_STRATEGIES
 from simulation_core.models import SimulationParameters
 from simulation_core.simulation import export_result, run_simulation
 
@@ -24,16 +24,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--scenario",
         choices=[scenario["slug"] for scenario in DEFAULT_SCENARIOS],
-        default="baseline",
+        default="weekly-baseline",
         help="Preset scenario to run.",
     )
+    parser.add_argument("--scheduling-strategy", choices=list(VALID_SCHEDULING_STRATEGIES))
     parser.add_argument("--num-doctors", type=int)
-    parser.add_argument("--num-nurses", type=int)
+    parser.add_argument("--num-doctors-night", type=int)
     parser.add_argument("--num-ct", type=int)
     parser.add_argument("--num-xray", type=int)
     parser.add_argument("--num-lab", type=int)
+    parser.add_argument("--num-ultrasound", type=int)
     parser.add_argument("--simulation-time", type=int)
     parser.add_argument("--exam-probability", type=float)
+    parser.add_argument("--arrival-rate-multiplier", type=float)
     parser.add_argument("--random-seed", type=int)
     return parser.parse_args()
 
@@ -43,13 +46,16 @@ def resolve_parameters(args: argparse.Namespace) -> SimulationParameters:
     payload = dict(preset["parameters"])
 
     overrides = {
+        "scheduling_strategy": args.scheduling_strategy,
         "num_doctors": args.num_doctors,
-        "num_nurses": args.num_nurses,
+        "num_doctors_night": args.num_doctors_night,
         "num_ct": args.num_ct,
         "num_xray": args.num_xray,
         "num_lab": args.num_lab,
+        "num_ultrasound": args.num_ultrasound,
         "simulation_time": args.simulation_time,
         "exam_probability": args.exam_probability,
+        "arrival_rate_multiplier": args.arrival_rate_multiplier,
         "random_seed": args.random_seed,
     }
     for key, value in overrides.items():

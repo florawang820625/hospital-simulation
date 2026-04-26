@@ -1,49 +1,77 @@
 [
   {
-    "slug": "baseline",
-    "title": "Baseline",
-    "description": "預設的人力與檢查資源配置，適合展示系統基準情境。",
-    "sample_result_slug": "baseline",
+    "slug": "weekly-baseline",
+    "title": "Weekly Baseline",
+    "description": "論文基準設定的 7 天 NHPP 情境，使用 SBP 與 5/5/3 醫師班表。",
+    "sample_result_slug": "weekly-baseline",
     "parameters": {
-      "num_doctors": 1,
-      "num_nurses": 2,
+      "scheduling_strategy": "SBP",
+      "num_doctors": 5,
+      "num_doctors_night": 3,
       "num_ct": 1,
       "num_xray": 1,
       "num_lab": 1,
+      "num_ultrasound": 1,
+      "simulation_time": 10080,
+      "exam_probability": 0.6,
+      "arrival_rate_multiplier": 1.0,
+      "random_seed": 7
+    }
+  },
+  {
+    "slug": "baseline",
+    "title": "Baseline",
+    "description": "論文基準設定的 12 小時片段，適合快速檢查單日流程。",
+    "sample_result_slug": "baseline",
+    "parameters": {
+      "scheduling_strategy": "SBP",
+      "num_doctors": 5,
+      "num_doctors_night": 3,
+      "num_ct": 1,
+      "num_xray": 1,
+      "num_lab": 1,
+      "num_ultrasound": 1,
       "simulation_time": 720,
       "exam_probability": 0.6,
+      "arrival_rate_multiplier": 1.0,
       "random_seed": 7
     }
   },
   {
     "slug": "surge",
     "title": "Surge Load",
-    "description": "提高檢查需求與模擬時長，用來觀察壅塞與等待時間。",
+    "description": "把論文的 NHPP 到診率提高 15%，用來觀察高壓需求情境。",
     "sample_result_slug": "surge",
     "parameters": {
-      "num_doctors": 1,
-      "num_nurses": 2,
+      "scheduling_strategy": "SBP",
+      "num_doctors": 5,
+      "num_doctors_night": 3,
       "num_ct": 1,
       "num_xray": 1,
       "num_lab": 1,
+      "num_ultrasound": 1,
       "simulation_time": 1440,
-      "exam_probability": 0.72,
+      "exam_probability": 0.6,
+      "arrival_rate_multiplier": 1.15,
       "random_seed": 11
     }
   },
   {
     "slug": "expanded-staffing",
     "title": "Expanded Staffing",
-    "description": "增加醫護與檢查資源，用來比較改善後的等待時間。",
+    "description": "在論文基準上增加醫師班表人力，觀察擴編後的等待改善。",
     "sample_result_slug": "expanded-staffing",
     "parameters": {
-      "num_doctors": 2,
-      "num_nurses": 3,
+      "scheduling_strategy": "SBP",
+      "num_doctors": 6,
+      "num_doctors_night": 4,
       "num_ct": 1,
-      "num_xray": 2,
-      "num_lab": 2,
+      "num_xray": 1,
+      "num_lab": 1,
+      "num_ultrasound": 1,
       "simulation_time": 720,
       "exam_probability": 0.6,
+      "arrival_rate_multiplier": 1.0,
       "random_seed": 13
     }
   }

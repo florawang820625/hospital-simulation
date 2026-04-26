@@ -2,6 +2,7 @@ import { startTransition, useEffect, useState } from 'react';
 import './App.css';
 import MetricCard from '../components/MetricCard.jsx';
 import StatusBanner from '../components/StatusBanner.jsx';
+import ArrivalRateReferenceTable from '../features/results/components/ArrivalRateReferenceTable.jsx';
 import ResultSummary from '../features/results/components/ResultSummary.jsx';
 import EventLogTable from '../features/results/components/EventLogTable.jsx';
 import ScenarioSelector from '../features/simulation/components/ScenarioSelector.jsx';
@@ -10,21 +11,28 @@ import { fetchSampleResult, fetchScenarios, isRemoteApiConfigured, runSimulation
 import { formatInteger } from '../lib/formatters.js';
 
 const EMPTY_FORM = {
-  num_doctors: 1,
-  num_nurses: 2,
+  scheduling_strategy: 'SBP',
+  num_doctors: 5,
+  num_doctors_night: 3,
   num_ct: 1,
   num_xray: 1,
   num_lab: 1,
+  num_ultrasound: 1,
   simulation_time: 10080,
   exam_probability: 0.6,
+  arrival_rate_multiplier: 1.0,
   random_seed: 7,
 };
+
+const VIEW_OVERVIEW = 'overview';
+const VIEW_PAPER_REFERENCE = 'paper-reference';
 
 function App() {
   const [scenarios, setScenarios] = useState([]);
   const [selectedScenarioSlug, setSelectedScenarioSlug] = useState('');
   const [formValues, setFormValues] = useState(EMPTY_FORM);
   const [result, setResult] = useState(null);
+  const [activeView, setActiveView] = useState(VIEW_OVERVIEW);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [apiAvailable, setApiAvailable] = useState(false);
@@ -153,8 +161,8 @@ function App() {
           <p className="eyebrow">React + SimPy + FastAPI</p>
           <h1 className="hero-title">急診模擬系統控制台</h1>
           <p className="hero-subtitle">
-            Cloudflare Pages 只承載前端，模擬執行交給 FastAPI。當 API 尚未部署時，頁面會自動退回
-            `public/data` 內的樣本結果，方便先展示介面與資料流。
+            目前預設情境已對齊論文版本的 NHPP 到診、SBP 排程、5/5/3 醫師班表與四種檢查流程。
+            當 API 尚未部署時，頁面會自動退回 `public/data` 內的樣本結果，方便先檢視整體行為。
           </p>
         </div>
 
@@ -174,39 +182,59 @@ function App() {
 
       <StatusBanner tone={status.tone}>{status.message}</StatusBanner>
 
-      <section className="layout-grid">
-        <div className="layout-column">
-          <ScenarioSelector
-            scenarios={scenarios}
-            selectedSlug={selectedScenarioSlug}
-            onChange={handleScenarioChange}
-            disabled={loading || busy}
-          />
-          <SimulationForm
-            values={formValues}
-            onFieldChange={(key, value) =>
-              setFormValues((current) => ({
-                ...current,
-                [key]: value,
-              }))
-            }
-            onSubmit={handleRunSimulation}
-            disabled={loading || busy}
-            apiAvailable={apiAvailable}
-          />
-        </div>
-
-        <div className="layout-column">
-          {result ? (
-            <ResultSummary
-              result={result}
-              sourceLabel={dataSource === 'live' ? '即時 API' : '本地樣本'}
-            />
-          ) : null}
-        </div>
+      <section className="view-switch" aria-label="頁面切換">
+        <button
+          type="button"
+          className={`view-tab ${activeView === VIEW_OVERVIEW ? 'is-active' : ''}`}
+          onClick={() => setActiveView(VIEW_OVERVIEW)}
+        >
+          模擬總覽
+        </button>
+        <button
+          type="button"
+          className={`view-tab ${activeView === VIEW_PAPER_REFERENCE ? 'is-active' : ''}`}
+          onClick={() => setActiveView(VIEW_PAPER_REFERENCE)}
+        >
+          論文參考
+        </button>
       </section>
 
-      {result?.event_log ? <EventLogTable logs={result.event_log} /> : null}
+      {activeView === VIEW_OVERVIEW ? (
+        <>
+          <section className="layout-grid">
+            <div className="layout-column">
+              <ScenarioSelector
+                scenarios={scenarios}
+                selectedSlug={selectedScenarioSlug}
+                onChange={handleScenarioChange}
+                disabled={loading || busy}
+              />
+              <SimulationForm
+                values={formValues}
+                onFieldChange={(key, value) =>
+                  setFormValues((current) => ({
+                    ...current,
+                    [key]: value,
+                  }))
+                }
+                onSubmit={handleRunSimulation}
+                disabled={loading || busy}
+                apiAvailable={apiAvailable}
+              />
+            </div>
+
+            <div className="layout-column">
+              {result ? <ResultSummary result={result} sourceLabel={dataSource === 'live' ? '即時 API' : '本地樣本'} /> : null}
+            </div>
+          </section>
+
+          {result?.event_log ? <EventLogTable logs={result.event_log} /> : null}
+        </>
+      ) : (
+        <section className="reference-page">
+          <ArrivalRateReferenceTable />
+        </section>
+      )}
     </main>
   );
 }

@@ -1,36 +1,54 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from .defaults import (
+    DEFAULT_ARRIVAL_RATE_MULTIPLIER,
     DEFAULT_EXAM_PROBABILITY,
     DEFAULT_K_LEVEL3,
     DEFAULT_K_LEVEL4,
     DEFAULT_NUM_CT,
     DEFAULT_NUM_DOCTORS,
+    DEFAULT_NUM_DOCTORS_NIGHT,
     DEFAULT_NUM_LAB,
-    DEFAULT_NUM_NURSES,
+    DEFAULT_NUM_ULTRASOUND,
     DEFAULT_NUM_XRAY,
     DEFAULT_RANDOM_SEED,
+    DEFAULT_SCHEDULING_STRATEGY,
     DEFAULT_SIMULATION_TIME,
     DEFAULT_TARGET_TIME_LEVEL3,
     DEFAULT_TARGET_TIME_LEVEL4,
     EVENT_ARRIVAL,
-    EVENT_START_DOCTOR,
     EVENT_DISCHARGE,
+    EVENT_END_RETURN,
+    EVENT_QUEUE_RETURN,
+    EVENT_START_INITIAL,
+    EVENT_START_RETURN,
 )
+
+
+def _next_shift_boundary(current_time: float) -> float:
+    minute_of_day = current_time % 1440
+    day_start = current_time - minute_of_day
+    for boundary in (7 * 60, 15 * 60, 22 * 60):
+        if boundary > minute_of_day + 1e-9:
+            return day_start + boundary
+    return day_start + 1440 + 7 * 60
 
 
 @dataclass(slots=True)
 class SimulationParameters:
+    scheduling_strategy: str = DEFAULT_SCHEDULING_STRATEGY
     num_doctors: int = DEFAULT_NUM_DOCTORS
-    num_nurses: int = DEFAULT_NUM_NURSES
+    num_doctors_night: int = DEFAULT_NUM_DOCTORS_NIGHT
     num_ct: int = DEFAULT_NUM_CT
     num_xray: int = DEFAULT_NUM_XRAY
     num_lab: int = DEFAULT_NUM_LAB
+    num_ultrasound: int = DEFAULT_NUM_ULTRASOUND
     simulation_time: int = DEFAULT_SIMULATION_TIME
     exam_probability: float = DEFAULT_EXAM_PROBABILITY
+    arrival_rate_multiplier: float = DEFAULT_ARRIVAL_RATE_MULTIPLIER
     target_time_level3: float = DEFAULT_TARGET_TIME_LEVEL3
     target_time_level4: float = DEFAULT_TARGET_TIME_LEVEL4
     k_level3: float = DEFAULT_K_LEVEL3
@@ -39,6 +57,42 @@ class SimulationParameters:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+    @property
+    def max_doctors(self) -> int:
+        return max(self.num_doctors, self.num_doctors_night)
+
+    def doctor_capacity_at(self, current_time: float) -> int:
+        minute_of_day = int(current_time) % 1440
+        if 7 * 60 <= minute_of_day < 22 * 60:
+            return self.num_doctors
+        return self.num_doctors_night
+
+    def is_doctor_active(self, doctor_index: int, current_time: float) -> bool:
+        return doctor_index <= self.doctor_capacity_at(current_time)
+
+    def minutes_until_doctor_status_change(self, doctor_index: int, current_time: float) -> float:
+        status_now = self.is_doctor_active(doctor_index, current_time)
+        next_boundary = _next_shift_boundary(current_time)
+
+        for _ in range(4):
+            if self.is_doctor_active(doctor_index, next_boundary) != status_now:
+                return max(next_boundary - current_time, 0.01)
+            next_boundary = _next_shift_boundary(next_boundary + 0.01)
+
+        return 1440.0
+
+    def doctor_capacity_minutes(self, horizon: float) -> float:
+        if horizon <= 0:
+            return 0.0
+
+        total = 0.0
+        current_time = 0.0
+        while current_time < horizon:
+            next_boundary = min(_next_shift_boundary(current_time), horizon)
+            total += self.doctor_capacity_at(current_time) * (next_boundary - current_time)
+            current_time = next_boundary
+        return round(total, 4)
 
 
 @dataclass(slots=True)
@@ -81,14 +135,16 @@ class SimulationResult:
         return payload
 
 
-@dataclass
+@dataclass(slots=True)
 class PatientRecord:
     patient_id: str
     triage_level: str
     arrival_time: float
     event_log: list[dict[str, Any]] = field(default_factory=list)
+    initial_triage_level: str = field(init=False)
 
     def __post_init__(self) -> None:
+        self.initial_triage_level = self.triage_level
         self.record_event(self.arrival_time, EVENT_ARRIVAL, resource="Triage")
 
     def record_event(self, current_time: float, event_name: str, resource: str = "") -> None:
@@ -112,46 +168,67 @@ class PatientRecord:
         self.event_log.append(record)
 
     def build_patient_summary(self) -> dict[str, Any]:
-        arrival_clock = round(self.arrival_time, 2)
-        enter_facility_clock: float | None = None
+        arrival_clock = float(round(self.arrival_time, 2))
+        initial_start_clock: float | None = None
+        follow_up_queue_clock: float | None = None
+        follow_up_start_clock: float | None = None
         departure_clock: float | None = None
 
         for log in self.event_log:
             event_name = log.get("event", "")
             event_time = float(log.get("timestamp", self.arrival_time))
 
-            if event_name == EVENT_START_DOCTOR and enter_facility_clock is None:
-                enter_facility_clock = event_time
-
-            if event_name == EVENT_DISCHARGE:
+            if event_name == EVENT_START_INITIAL and initial_start_clock is None:
+                initial_start_clock = event_time
+            elif event_name == EVENT_QUEUE_RETURN and follow_up_queue_clock is None:
+                follow_up_queue_clock = event_time
+            elif event_name == EVENT_START_RETURN and follow_up_start_clock is None:
+                follow_up_start_clock = event_time
+            elif event_name in {EVENT_END_RETURN, EVENT_DISCHARGE}:
                 departure_clock = event_time
 
-        if enter_facility_clock is None:
-            enter_facility_clock = float(arrival_clock)
+        if initial_start_clock is None:
+            initial_start_clock = arrival_clock
 
         if departure_clock is None:
             departure_clock = max(float(log.get("timestamp", 0)) for log in self.event_log)
 
-        waiting_time = max(0.0, enter_facility_clock - float(arrival_clock))
-        service_time = max(0.0, departure_clock - enter_facility_clock)
-        time_in_system = max(0.0, departure_clock - float(arrival_clock))
+        waiting_time = max(0.0, initial_start_clock - arrival_clock)
+        follow_up_waiting_time = 0.0
+        if follow_up_queue_clock is not None and follow_up_start_clock is not None:
+            follow_up_waiting_time = max(0.0, follow_up_start_clock - follow_up_queue_clock)
+
+        service_time = max(0.0, departure_clock - initial_start_clock)
+        time_in_system = max(0.0, departure_clock - arrival_clock)
 
         return {
             "patient_id": self.patient_id,
-            "arrival_clock": round(float(arrival_clock), 2),
-            "enter_facility_clock": round(enter_facility_clock, 2),
+            "triage_level": self.initial_triage_level,
+            "arrival_clock": round(arrival_clock, 2),
+            "enter_facility_clock": round(initial_start_clock, 2),
             "waiting_time": round(waiting_time, 2),
+            "follow_up_waiting_time": round(follow_up_waiting_time, 2),
+            "total_waiting_time": round(waiting_time + follow_up_waiting_time, 2),
             "service_time": round(service_time, 2),
             "departure_clock": round(departure_clock, 2),
             "time_in_system": round(time_in_system, 2),
         }
 
 
+@dataclass(slots=True)
+class DoctorConsultationRequest:
+    patient: PatientRecord
+    stage: Literal["initial", "follow_up"]
+    queued_at: float
+    duration: float
+    completion_event: Any
+
+
 def extract_all_logs(patients: list[PatientRecord]) -> list[dict[str, Any]]:
     all_logs: list[dict[str, Any]] = []
     for patient in patients:
         all_logs.extend(patient.event_log)
-    return all_logs
+    return sorted(all_logs, key=lambda item: float(item.get("timestamp", 0.0)))
 
 
 def extract_patient_summaries(patients: list[PatientRecord]) -> list[dict[str, Any]]:
@@ -175,6 +252,8 @@ def enrich_event_log(
             {
                 "enter_facility_clock": patient_summary.get("enter_facility_clock"),
                 "waiting_time": patient_summary.get("waiting_time"),
+                "follow_up_waiting_time": patient_summary.get("follow_up_waiting_time"),
+                "total_waiting_time": patient_summary.get("total_waiting_time"),
                 "service_time": patient_summary.get("service_time"),
                 "departure_clock": patient_summary.get("departure_clock"),
                 "time_in_system": patient_summary.get("time_in_system"),
